@@ -52,6 +52,8 @@ AWS_REGION=us-east-1
 
 OPENAI_API_KEY=your-openai-api-key
 
+GROQ_API_KEY=your-groq-api-key
+
 TAVILY_API_KEY=your-tavily-api-key
 
 OPENWEATHER_API_KEY=your-openweather-api-key

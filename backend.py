@@ -25,8 +25,10 @@ load_dotenv()
 
 
 
-from langchain_groq import ChatGroq
-llm=ChatGroq(model="openai/gpt-oss-20b")
+# Keep imports safe when configuration is missing; the Streamlit entry point
+# displays a setup message before accepting chat requests.
+groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
+llm = ChatGroq(model="openai/gpt-oss-20b", api_key=groq_api_key) if groq_api_key else None
 
 # Embeddings model
 embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
@@ -304,7 +306,7 @@ def get_current_weather(location: str) -> str:
 tools = [search_tool,calculator, get_stock_price,get_current_weather, rag_tool, purchase_stock]
 
 # Make the LLM tool-aware
-llm_with_tools = llm.bind_tools(tools)
+llm_with_tools = llm.bind_tools(tools) if llm is not None else None
 
 
 
@@ -319,6 +321,12 @@ class ChatState(TypedDict):
 # Nodes 1
 def chat_node(state: ChatState):
     """LLM node that can answer directly or call an appropriate tool."""
+
+    if llm_with_tools is None:
+        raise RuntimeError(
+            "Groq is not configured. Set GROQ_API_KEY in the app environment "
+            "and restart the application."
+        )
 
     system_message = SystemMessage(
         content=(

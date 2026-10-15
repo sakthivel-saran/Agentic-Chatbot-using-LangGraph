@@ -310,6 +310,15 @@ st.set_page_config(
     page_icon="🤖"
 )
 
+# The backend is imported before Streamlit starts rendering. Keep a missing
+# provider key from surfacing as a Python traceback in the browser.
+if not os.getenv("GROQ_API_KEY", "").strip():
+    st.error(
+        "Groq is not configured. Set a valid GROQ_API_KEY in the app's "
+        "environment or deployment secrets, then restart the app."
+    )
+    st.stop()
+
 # Display the main application title
 st.title("Agentic Chatbot with LangGraph")
 
