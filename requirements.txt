@@ -10,3 +10,4 @@ langchain-community
 faiss-cpu
 pypdf
 langchain-text-splitters
+langchain-google-genai
