@@ -31,11 +31,26 @@ groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
 llm = ChatGroq(model="openai/gpt-oss-20b", api_key=groq_api_key) if groq_api_key else None
 
 # Embeddings model
-embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
+google_api_key = (
+    os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or ""
+).strip()
+embeddings = (
+    GoogleGenerativeAIEmbeddings(
+        model="gemini-embedding-001",
+        google_api_key=google_api_key,
+    )
+    if google_api_key
+    else None
+)
 
 
 
 def ingest_rag_document(file_path):
+    if embeddings is None:
+        raise RuntimeError(
+            "Google Gemini is not configured. Set GOOGLE_API_KEY to enable PDF uploads."
+        )
+
     DB_PATH = "faiss_db"
     loader = PyPDFLoader(file_path)
     docs = loader.load()
@@ -47,6 +62,11 @@ def ingest_rag_document(file_path):
 
 
 def get_retriever():
+    if embeddings is None:
+        raise RuntimeError(
+            "Google Gemini is not configured. Set GOOGLE_API_KEY to search uploaded PDFs."
+        )
+
     DB_PATH = "faiss_db"
     vector_store = FAISS.load_local(
             folder_path=DB_PATH,

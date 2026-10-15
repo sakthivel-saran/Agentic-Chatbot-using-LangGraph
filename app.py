@@ -312,10 +312,19 @@ st.set_page_config(
 
 # The backend is imported before Streamlit starts rendering. Keep a missing
 # provider key from surfacing as a Python traceback in the browser.
-if not os.getenv("GROQ_API_KEY", "").strip():
+missing_api_keys = [
+    name
+    for name, value in (
+        ("GROQ_API_KEY", os.getenv("GROQ_API_KEY")),
+        ("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")),
+    )
+    if not (value or "").strip()
+]
+if missing_api_keys:
     st.error(
-        "Groq is not configured. Set a valid GROQ_API_KEY in the app's "
-        "environment or deployment secrets, then restart the app."
+        "Missing required API key(s): "
+        + ", ".join(missing_api_keys)
+        + ". Add them to the app environment or deployment secrets, then restart the app."
     )
     st.stop()
 
