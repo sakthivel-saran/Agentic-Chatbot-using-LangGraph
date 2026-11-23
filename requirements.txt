@@ -2,7 +2,6 @@ langgraph
 langchain-groq
 python-dotenv
 pydantic
-streamlit
 langgraph-checkpoint-sqlite
 langchain-tavily
 tavily-python
