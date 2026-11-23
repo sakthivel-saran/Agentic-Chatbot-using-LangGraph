@@ -1,12 +1,10 @@
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict, Annotated
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.message import add_messages
-import sqlite3
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_tavily import TavilySearch
 from langchain_core.tools import tool
@@ -25,8 +23,7 @@ load_dotenv()
 
 
 
-# Keep imports safe when configuration is missing; the Streamlit entry point
-# displays a setup message before accepting chat requests.
+# Keep imports safe when provider configuration is missing.
 groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
 llm = ChatGroq(model="openai/gpt-oss-20b", api_key=groq_api_key) if groq_api_key else None
 
@@ -42,39 +39,39 @@ embeddings = (
     if google_api_key
     else None
 )
+_document_store = None
 
 
 
 def ingest_rag_document(file_path):
+    global _document_store
     if embeddings is None:
         raise RuntimeError(
             "Google Gemini is not configured. Set GOOGLE_API_KEY to enable PDF uploads."
         )
 
-    DB_PATH = "faiss_db"
     loader = PyPDFLoader(file_path)
     docs = loader.load()
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = splitter.split_documents(docs)
-    vector_store = FAISS.from_documents(chunks, embeddings)
-    vector_store.save_local(DB_PATH)
+    if _document_store is None:
+        _document_store = FAISS.from_documents(chunks, embeddings)
+    else:
+        _document_store.add_documents(chunks)
     
 
 
 def get_retriever():
+    global _document_store
     if embeddings is None:
         raise RuntimeError(
             "Google Gemini is not configured. Set GOOGLE_API_KEY to search uploaded PDFs."
         )
 
-    DB_PATH = "faiss_db"
-    vector_store = FAISS.load_local(
-            folder_path=DB_PATH,
-            embeddings=embeddings,
-            allow_dangerous_deserialization=True
-        )
+    if _document_store is None:
+        raise RuntimeError("No PDF has been uploaded to this function instance yet.")
     
-    retriever = vector_store.as_retriever(
+    retriever = _document_store.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 4}
     )
@@ -387,9 +384,9 @@ tool_node = ToolNode(tools)
 
 
 
-# Checkpointer
-conn = sqlite3.connect(database="chatbot.db", check_same_thread=False)
-checkpoint = SqliteSaver(conn)
+# Vercel functions have ephemeral filesystems, so this demo keeps checkpoints
+# in memory. Use a persistent checkpointer for durable, cross-instance history.
+checkpoint = MemorySaver()
 
 
 
@@ -409,10 +406,9 @@ chatbot = graph.compile(checkpointer=checkpoint)
 
 
 
-# Helper functions for Streamlit frontend
+# Helper used by the browser API
 def get_all_threads():
     all_threads = set()
     for ckpt in checkpoint.list(None):
-        all_threads.add(ckpt.config['configurable']['thread_id'])
-
-    return list(all_threads)
+        all_threads.add(ckpt.config["configurable"]["thread_id"])
+    return sorted(all_threads)

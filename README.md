@@ -1,69 +1,25 @@
-# Agentic-Chatbot-using-LangGraph
-Agentic-Chatbot-APP-CICD-Deployment-with-Github-Actions-on-AWS
-Description: About the deployment
-1. Build docker image of the source code
+# Agentic Chatbot
 
-2. Push your docker image to docker hub
+A browser based chat interface powered by LangGraph, with web search, weather, calculator, stock tools, PDF question answering, and approval prompts for stock purchases.
 
-3. Launch Your EC2 
+## Run locally
 
-4. Pull Your image from docker hub in EC2
+1. Create a Python 3.11 environment and install dependencies:
 
-5. Lauch your docker image in EC2
-1. Login to AWS console.
-2. Create IAM user for deployment
-#Policy:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-1. AmazonEC2FullAccess
-3. Create EC2 machine (Ubuntu)
-4. Open EC2 and Install docker in EC2 Machine:
-#optinal
+2. Set `GROQ_API_KEY`, `GOOGLE_API_KEY`, and the optional tool keys in `.env`.
 
-sudo apt-get update -y
+3. Install the Vercel CLI and run the static frontend and Python function together:
 
-sudo apt-get upgrade
+   ```bash
+   vercel dev
+   ```
 
-#Install Docker
+## Deploy to Vercel
 
-curl -fsSL https://get.docker.com -o get-docker.sh
+Import the repository in Vercel and add the required environment variables: `GROQ_API_KEY` and `GOOGLE_API_KEY`. Add `TAVILY_API_KEY` and `OPENWEATHER_API_KEY` to enable those tools. The project serves the HTML, CSS, and JavaScript from `public/` and routes `/api/*` to the Python function in `app.py`.
 
-sudo sh get-docker.sh
-
-sudo usermod -aG docker ubuntu
-
-newgrp docker
-Note: Do the port mapping to this port:- 8501
-5. Configure EC2 as self-hosted runner:
-setting>actions>runner>new self hosted runner> choose os> then run command one by one
-6. How to add secret keys to GitHub Actions:
-REGISTRY=docker.io
-
-DOCKER_USERNAME=your-dockerhub-username
-
-DOCKER_PASSWORD=your-dockerhub-access-token
-
-IMAGE_NAME=agentic-chatbot
-
-AWS_ACCESS_KEY_ID=your-aws-access-key
-
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-
-AWS_REGION=us-east-1
-
-OPENAI_API_KEY=your-openai-api-key
-
-GROQ_API_KEY=your-groq-api-key
-
-TAVILY_API_KEY=your-tavily-api-key
-
-OPENWEATHER_API_KEY=your-openweather-api-key
-
-GOOGLE_API_KEY=your-google-api-key
-
-LANGSMITH_TRACING=true
-
-LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-
-LANGSMITH_API_KEY=your-langsmith-api-key
-
-LANGSMITH_PROJECT=agentic-chatbot-project
+Vercel functions are stateless and may scale to separate instances. This demo keeps checkpoints and PDF indexes in process memory, so they can disappear on a cold start and are not shared across instances. Use a persistent LangGraph checkpointer and hosted vector store for durable multi-user history and documents.
