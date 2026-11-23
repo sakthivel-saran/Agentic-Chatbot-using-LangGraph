@@ -1,5 +1,6 @@
 """Vercel Python API for the static Agentic Chatbot interface."""
 
+import utils.session
 import json
 import os
 import tempfile
